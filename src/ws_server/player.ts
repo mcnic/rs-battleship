@@ -1,3 +1,4 @@
+import { getUser } from './db/store';
 import {
   TAllQuery,
   TRegisterReqData,
@@ -5,31 +6,30 @@ import {
   TWinnerRespData,
 } from './types';
 
-// todo
 export const loginPlayer = async (data: TAllQuery): Promise<TAllQuery> => {
-  console.log('loginPlayer', data);
-
   const realData: TRegisterReqData = JSON.parse(data.data);
+  const { name, password } = realData;
   const { type, id } = data;
+
+  const user = await getUser({ name, password });
+  const userIsCorrect: boolean = !!user && user === password;
 
   const resp: TAllQuery = {
     type,
     id,
     data: JSON.stringify({
-      name: realData.name,
+      name,
       index: 5,
-      error: false,
-      errorText: 'user not found',
+      error: !userIsCorrect,
+      errorText: userIsCorrect ? '' : 'user not found',
     } as TRegisterRespData),
   };
-
-  console.log('resp', resp);
 
   return resp;
 };
 
 // todo
-export const updateWinners = (data: TAllQuery): TAllQuery => {
+export const updateWinners = async (data: TAllQuery): Promise<TAllQuery> => {
   console.log('updateWinners', data);
 
   // const realData: TDataRegisterReq = JSON.parse(data.data);

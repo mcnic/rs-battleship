@@ -15,7 +15,6 @@ wsServer.on('connection', function connection(ws) {
   ws.on('error', console.error);
 
   ws.on('message', async (data) => {
-    console.log('received: %s', data);
     const parsedData: TAllQuery = JSON.parse(data.toString());
 
     const type = parsedData.type;
@@ -24,13 +23,11 @@ wsServer.on('connection', function connection(ws) {
     switch (type) {
       case 'reg':
         answer = await loginPlayer(parsedData);
-        console.log('answer', JSON.stringify(answer));
         ws.send(JSON.stringify(answer));
         break;
 
       case 'update_winners':
         answer = await updateWinners(parsedData);
-        console.log('answer', JSON.stringify(answer));
 
         ws.send(JSON.stringify(answer));
         break;
