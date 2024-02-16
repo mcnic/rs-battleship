@@ -25,7 +25,7 @@ wsServer.on('connection', function connection(ws) {
       case 'reg':
         answer = await loginPlayer(
           parsedData,
-          Boolean(process.env.ALLOW_ALL_USERS),
+          process.env.ALLOW_ALL_USERS === 'true',
         );
         ws.send(JSON.stringify(answer));
         break;
