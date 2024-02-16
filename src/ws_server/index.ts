@@ -1,4 +1,5 @@
 import { WebSocketServer } from 'ws';
+import 'dotenv/config';
 import { loginPlayer, updateWinners } from './player';
 import { TAllQuery } from './types';
 import { createRoom } from './room';
@@ -22,7 +23,10 @@ wsServer.on('connection', function connection(ws) {
 
     switch (type) {
       case 'reg':
-        answer = await loginPlayer(parsedData);
+        answer = await loginPlayer(
+          parsedData,
+          Boolean(process.env.ALLOW_ALL_USERS),
+        );
         ws.send(JSON.stringify(answer));
         break;
 

@@ -6,13 +6,17 @@ import {
   TWinnerRespData,
 } from './types';
 
-export const loginPlayer = async (data: TAllQuery): Promise<TAllQuery> => {
+export const loginPlayer = async (
+  data: TAllQuery,
+  allowAll: boolean = false,
+): Promise<TAllQuery> => {
   const realData: TRegisterReqData = JSON.parse(data.data);
   const { name, password } = realData;
   const { type, id } = data;
 
   const user = await getUser({ name, password });
-  const userIsCorrect: boolean = !!user && user === password;
+  const userIsCorrect: boolean = allowAll || (!!user && user === password);
+  console.log('userIsCorrect', userIsCorrect);
 
   const resp: TAllQuery = {
     type,
