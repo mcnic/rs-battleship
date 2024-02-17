@@ -2,7 +2,7 @@ import { WebSocketServer } from 'ws';
 import 'dotenv/config';
 import { loginPlayer, updateWinners } from './player';
 import { TAllQuery } from './types';
-import { createRoom } from './room';
+import { addUserToRoom, createRoom, updateRoom } from './room';
 
 export const wsServer = new WebSocketServer({ port: 3000 });
 
@@ -28,22 +28,40 @@ wsServer.on('connection', function connection(ws) {
           process.env.ALLOW_ALL_USERS === 'true',
         );
         ws.send(JSON.stringify(answer));
+
+        answer = await updateRoom();
+        ws.send(JSON.stringify(answer));
+
+        answer = await updateWinners();
+        ws.send(JSON.stringify(answer));
+
         break;
 
       case 'update_winners':
-        answer = await updateWinners(parsedData);
-
+        answer = await updateWinners();
         ws.send(JSON.stringify(answer));
+
         break;
 
       case 'create_room':
-        answer = await createRoom(parsedData);
-        console.log('answer', JSON.stringify(answer));
+        await createRoom(parsedData);
 
+        answer = await updateRoom();
         ws.send(JSON.stringify(answer));
+
         break;
+
+      case 'add_user_to_room':
+        await addUserToRoom(parsedData);
+
+        answer = await updateRoom();
+        ws.send(JSON.stringify(answer));
+
+        //todo create game
+        break;
+
       default:
-        console.log(' unknown  type', parsedData);
+        console.log('<-- unknown  type', parsedData);
         break;
     }
   });

@@ -1,55 +1,55 @@
-import { TAllQuery } from './types';
+import { getRooms, setRooms } from './db/store';
+import { TAddUserToRoomData, TAllQuery } from './types';
 
-// todo
-export const createRoom = async (data: TAllQuery): Promise<TAllQuery> => {
-  console.log('createRoom', data);
+export const createRoom = async (data: TAllQuery) => {
+  console.log('<-- createRoom', data);
 
-  // const realData: TDataRegisterReq = JSON.parse(data.data);
-  const { type, id } = data;
+  const rooms = await getRooms();
 
-  const resp: TAllQuery = {
-    type,
-    id,
-    data: JSON.stringify({
-      name: 'fsdf',
-      wins: 0,
-    }),
-  };
-  return resp;
+  rooms.push({
+    roomId: 1,
+    roomUsers: [
+      {
+        name: 'my',
+        index: 0,
+      },
+    ],
+  });
+
+  await setRooms(rooms);
 };
 
-// todo
-export const addUserToRoom = (data: TAllQuery): TAllQuery => {
-  console.log('addUserToRoom', data);
+export const addUserToRoom = async (data: TAllQuery) => {
+  console.log('<-- addUserToRoom', data);
 
-  // const realData: TDataRegisterReq = JSON.parse(data.data);
-  const { type, id } = data;
+  const realData: TAddUserToRoomData = JSON.parse(data.data);
+  const { indexRoom } = realData;
 
-  const resp: TAllQuery = {
-    type,
-    id,
-    data: JSON.stringify({
-      name: 'fsdf',
-      wins: 0,
-    }),
-  };
-  return resp;
+  let rooms = await getRooms();
+  rooms = rooms.filter(({ roomId }) => roomId === indexRoom);
+  if (rooms.length) {
+    rooms[0]?.roomUsers.push({
+      name: 'my',
+      index: 1,
+    });
+  }
+
+  await setRooms(rooms);
 };
 
-// todo
-export const updateRoom = (data: TAllQuery): TAllQuery => {
-  console.log('updateRoom', data);
+export const updateRoom = async (): Promise<TAllQuery> => {
+  let rooms = await getRooms();
 
-  // const realData: TDataRegisterReq = JSON.parse(data.data);
-  const { type, id } = data;
+  // send rooms list, where only one player inside
+  rooms = rooms.filter(({ roomUsers }) => roomUsers.length === 1);
 
   const resp: TAllQuery = {
-    type,
-    id,
-    data: JSON.stringify({
-      name: 'fsdf',
-      wins: 0,
-    }),
+    type: 'update_room',
+    id: 0,
+    data: JSON.stringify(rooms),
   };
+
+  console.log('--> updateRoom', resp);
+
   return resp;
 };

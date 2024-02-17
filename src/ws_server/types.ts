@@ -1,4 +1,9 @@
-export type TQueries = 'reg' | 'update_winners' | 'create_room';
+export type TQueries =
+  | 'reg'
+  | 'update_winners'
+  | 'create_room'
+  | 'update_room'
+  | 'add_user_to_room';
 
 export type TAllQuery = {
   type: TQueries;
@@ -11,14 +16,35 @@ export type TRegisterReqData = {
   password: string;
 };
 
-export type TRegisterRespData = {
-  name: string;
-  index: number;
-  error: boolean;
-  errorText: string;
+export type TAddUserToRoomData = {
+  indexRoom: number;
 };
 
-export type TWinnerRespData = {
-  name: string;
-  wins: number;
-};
+// export type TRegisterRespData = {
+//   name: string;
+//   index: number;
+//   error: boolean;
+//   errorText: string;
+// };
+
+// export type TWinnerRespData = {
+//   name: string;
+//   wins: number;
+// };
+
+// export type TUpdateRoomRespData = {
+//   roomId: number;
+//   roomUsers: [
+//     {
+//       name: string;
+//       index: number;
+//     },
+//   ];
+// };
+
+// export type TUpdateWinnersRespData = [
+//   {
+//     name: string;
+//     wins: number;
+//   },
+// ];
