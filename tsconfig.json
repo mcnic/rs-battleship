@@ -20,6 +20,6 @@
     "strictPropertyInitialization": false,
     "outDir": "dist"
   },
-  "include": ["**/*"],
+  "include": ["**/*.ts"],
   "exclude": ["node_modules"]
 }
