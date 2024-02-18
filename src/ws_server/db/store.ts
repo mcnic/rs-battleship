@@ -1,12 +1,12 @@
 import { getStore, setStore } from './memoryStore';
 
 type TUser = {
-  name: string;
   password: string;
   index: number;
+  connectionId: string;
 };
 
-type TStoreUsers = TUser[];
+type TStoreUsers = { [key: string]: TUser };
 
 type TRoomUser = {
   name: string;
@@ -30,73 +30,69 @@ export type TStore = {
 };
 
 const clearDB: TStore = {
-  users: [],
-  rooms: [
-    {
-      roomId: 0,
-      roomUsers: [
-        {
-          name: 'user 0',
-          index: 0,
-        },
-      ],
-    },
-    {
-      roomId: 1,
-      roomUsers: [
-        {
-          name: 'user 1',
-          index: 0,
-        },
-      ],
-    },
-    {
-      roomId: 2,
-      roomUsers: [
-        {
-          name: 'user 2',
-          index: 0,
-        },
-      ],
-    },
-  ],
+  users: {},
+  rooms: [],
   winners: [],
 };
 
-export const getUser = async ({
-  name,
-}: Pick<TUser, 'name' | 'password'>): Promise<TUser | null> => {
+export const getUser = async (name: string): Promise<TUser | null> => {
   const store = (await getStore(clearDB)) as TStore;
-  console.log('userData', store.users);
-  const userData = store.users.filter((user) => user.name === name);
 
-  return userData[0] ?? null;
+  console.log('users', store.users);
+
+  return store.users[name] ?? null;
 };
 
 // todo: for learning project password is unprotected !!!
-export const addUser = async ({
-  name,
-  password,
-}: Pick<TUser, 'name' | 'password'>): Promise<number> => {
+export const addUser = async (
+  name: string,
+  password: string,
+  connectionId: string,
+): Promise<number> => {
   const store = (await getStore(clearDB)) as TStore;
-  const index = store.users.length;
+  const index = Object.keys(store.users).length;
 
-  store.users.push({
-    name,
+  store.users[name] = {
     password,
     index,
-  });
+    connectionId,
+  };
 
   await setStore(store, clearDB);
 
-  console.log('userData', store.users);
+  console.log('users', store.users);
+
   return index;
 };
 
-export const setUser = async ({ name, password }: TUser) => {
+export const updateConnectinId = async (name: string, connectinId: string) => {
   const store = (await getStore(clearDB)) as TStore;
 
-  store.users = { ...store.users, ...{ [name]: password } };
+  const user = store.users[name];
+  if (user) {
+    user.connectionId = connectinId;
+    store.users = { ...store.users, [name]: user };
+    console.log('users', store.users);
+
+    await setStore(store, clearDB);
+  }
+};
+
+export const getUserNameByConnectionId = async (
+  connectinId: string,
+): Promise<string | null> => {
+  const store = (await getStore(clearDB)) as TStore;
+
+  const foundUsersKey = Object.keys(store.users).filter(
+    (name) => store.users[name]?.connectionId === connectinId,
+  );
+  return foundUsersKey[0] ?? null;
+};
+
+export const setUser = async (name: string, userData: TUser) => {
+  const store = (await getStore(clearDB)) as TStore;
+
+  store.users[name] = userData;
 
   await setStore(store, clearDB);
 };

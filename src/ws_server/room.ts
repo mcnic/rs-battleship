@@ -1,14 +1,14 @@
 import { getRooms, setRooms } from './db/store';
 import { TAddUserToRoomData, TAllQuery } from './types';
 
-export const createRoom = async () => {
+export const createRoom = async (name: string) => {
   const rooms = await getRooms();
 
   rooms.push({
-    roomId: 1,
+    roomId: rooms.length,
     roomUsers: [
       {
-        name: 'my',
+        name,
         index: 0,
       },
     ],

@@ -1,17 +1,22 @@
-import { addUser, getUser, getWinners } from './db/store';
+import { addUser, getUser, getWinners, updateConnectinId } from './db/store';
 import { TAllQuery, TRegisterReqData } from './types';
 
-export const loginOrCreate = async (data: TAllQuery): Promise<TAllQuery> => {
+export const loginOrCreate = async (
+  data: TAllQuery,
+  connectionId: string,
+): Promise<TAllQuery> => {
   const realData: TRegisterReqData = JSON.parse(data.data);
   const { name, password } = realData;
   const { type, id } = data;
 
-  const userDataOrNull = await getUser({ name, password });
+  const userDataOrNull = await getUser(name);
   let resp: TAllQuery;
 
   if (userDataOrNull !== null) {
     if (userDataOrNull.password === password) {
       // user is correct
+      await updateConnectinId(name, connectionId);
+
       resp = {
         type,
         id,
@@ -37,7 +42,7 @@ export const loginOrCreate = async (data: TAllQuery): Promise<TAllQuery> => {
     }
   } else {
     // no user, create new
-    const index = addUser({ name, password });
+    const index = await addUser(name, password, connectionId);
 
     resp = {
       type,
