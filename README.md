@@ -34,6 +34,3 @@
 **Note**: replace `npm` with `yarn` in `package.json` if you use yarn.
 
 ## Testing app
-
-login: 12345
-password: 12345

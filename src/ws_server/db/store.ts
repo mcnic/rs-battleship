@@ -3,9 +3,10 @@ import { getStore, setStore } from './memoryStore';
 type TUser = {
   name: string;
   password: string;
+  index: number;
 };
 
-type TStoreUsers = { [key: string]: string };
+type TStoreUsers = TUser[];
 
 type TRoomUser = {
   name: string;
@@ -29,9 +30,7 @@ export type TStore = {
 };
 
 const clearDB: TStore = {
-  users: {
-    '12345': '12345',
-  },
+  users: [],
   rooms: [
     {
       roomId: 0,
@@ -64,10 +63,34 @@ const clearDB: TStore = {
   winners: [],
 };
 
-export const getUser = async ({ name }: TUser): Promise<string | null> => {
+export const getUser = async ({
+  name,
+}: Pick<TUser, 'name' | 'password'>): Promise<TUser | null> => {
   const store = (await getStore(clearDB)) as TStore;
+  console.log('userData', store.users);
+  const userData = store.users.filter((user) => user.name === name);
 
-  return store.users[name] ?? null;
+  return userData[0] ?? null;
+};
+
+// todo: for learning project password is unprotected !!!
+export const addUser = async ({
+  name,
+  password,
+}: Pick<TUser, 'name' | 'password'>): Promise<number> => {
+  const store = (await getStore(clearDB)) as TStore;
+  const index = store.users.length;
+
+  store.users.push({
+    name,
+    password,
+    index,
+  });
+
+  await setStore(store, clearDB);
+
+  console.log('userData', store.users);
+  return index;
 };
 
 export const setUser = async ({ name, password }: TUser) => {

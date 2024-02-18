@@ -1,31 +1,55 @@
-import { getUser, getWinners } from './db/store';
+import { addUser, getUser, getWinners } from './db/store';
 import { TAllQuery, TRegisterReqData } from './types';
 
-export const loginPlayer = async (
-  data: TAllQuery,
-  allowAll: boolean = false,
-): Promise<TAllQuery> => {
+export const loginOrCreate = async (data: TAllQuery): Promise<TAllQuery> => {
   const realData: TRegisterReqData = JSON.parse(data.data);
   const { name, password } = realData;
   const { type, id } = data;
 
-  console.log('<- loginPlayer', realData);
+  const userDataOrNull = await getUser({ name, password });
+  let resp: TAllQuery;
 
-  const user = await getUser({ name, password });
-  const userIsCorrect: boolean = allowAll || (!!user && user === password);
+  if (userDataOrNull !== null) {
+    if (userDataOrNull.password === password) {
+      // user is correct
+      resp = {
+        type,
+        id,
+        data: JSON.stringify({
+          name,
+          index: userDataOrNull.index,
+          error: false,
+          errorText: undefined,
+        }),
+      };
+    } else {
+      // wrong password
+      resp = {
+        type,
+        id,
+        data: JSON.stringify({
+          name,
+          index: userDataOrNull.index,
+          error: true,
+          errorText: 'wrong password',
+        }),
+      };
+    }
+  } else {
+    // no user, create new
+    const index = addUser({ name, password });
 
-  const resp: TAllQuery = {
-    type,
-    id,
-    data: JSON.stringify({
-      name,
-      index: 5,
-      error: !userIsCorrect,
-      errorText: userIsCorrect ? '' : 'user not found',
-    }),
-  };
-
-  console.log('--> loginPlayer', resp);
+    resp = {
+      type,
+      id,
+      data: JSON.stringify({
+        name,
+        index,
+        error: false,
+        errorText: undefined,
+      }),
+    };
+  }
 
   return resp;
 };
@@ -38,8 +62,6 @@ export const updateWinners = async (): Promise<TAllQuery> => {
     id: 0,
     data: JSON.stringify(winners),
   };
-
-  console.log('--> updateWinners', resp);
 
   return resp;
 };
