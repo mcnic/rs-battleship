@@ -1,9 +1,7 @@
 import { getRooms, setRooms } from './db/store';
 import { TAddUserToRoomData, TAllQuery } from './types';
 
-export const createRoom = async (data: TAllQuery) => {
-  console.log('<-- createRoom', data);
-
+export const createRoom = async () => {
   const rooms = await getRooms();
 
   rooms.push({
@@ -20,8 +18,6 @@ export const createRoom = async (data: TAllQuery) => {
 };
 
 export const addUserToRoom = async (data: TAllQuery) => {
-  console.log('<-- addUserToRoom', data);
-
   const realData: TAddUserToRoomData = JSON.parse(data.data);
   const { indexRoom } = realData;
 
@@ -48,8 +44,6 @@ export const updateRoom = async (): Promise<TAllQuery> => {
     id: 0,
     data: JSON.stringify(rooms),
   };
-
-  console.log('--> updateRoom', resp);
 
   return resp;
 };

@@ -1,10 +1,15 @@
-import { WebSocketServer } from 'ws';
+import { WebSocket, WebSocketServer } from 'ws';
 import 'dotenv/config';
-import { loginPlayer, updateWinners } from './player';
+import { loginOrCreate, updateWinners } from './player';
 import { TAllQuery } from './types';
 import { addUserToRoom, createRoom, updateRoom } from './room';
 
 export const wsServer = new WebSocketServer({ port: 3000 });
+
+const sendData = (ws: WebSocket, data: Object) => {
+  console.log('tranceive', data);
+  ws.send(JSON.stringify(data));
+};
 
 wsServer.on('connection', function connection(ws) {
   console.log('connection established');
@@ -21,33 +26,32 @@ wsServer.on('connection', function connection(ws) {
     const type = parsedData.type;
     let answer: TAllQuery;
 
+    console.log('\nreceive', parsedData);
+
     switch (type) {
       case 'reg':
-        answer = await loginPlayer(
-          parsedData,
-          process.env.ALLOW_ALL_USERS === 'true',
-        );
-        ws.send(JSON.stringify(answer));
+        answer = await loginOrCreate(parsedData);
+        sendData(ws, answer);
 
         answer = await updateRoom();
-        ws.send(JSON.stringify(answer));
+        sendData(ws, answer);
 
         answer = await updateWinners();
-        ws.send(JSON.stringify(answer));
+        sendData(ws, answer);
 
         break;
 
       case 'update_winners':
         answer = await updateWinners();
-        ws.send(JSON.stringify(answer));
+        sendData(ws, answer);
 
         break;
 
       case 'create_room':
-        await createRoom(parsedData);
+        await createRoom();
 
         answer = await updateRoom();
-        ws.send(JSON.stringify(answer));
+        sendData(ws, answer);
 
         break;
 
@@ -55,7 +59,7 @@ wsServer.on('connection', function connection(ws) {
         await addUserToRoom(parsedData);
 
         answer = await updateRoom();
-        ws.send(JSON.stringify(answer));
+        sendData(ws, answer);
 
         //todo create game
         break;
