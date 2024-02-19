@@ -2,8 +2,14 @@ import { WebSocket, WebSocketServer } from 'ws';
 import 'dotenv/config';
 import { loginOrCreate, updateWinners } from './player';
 import { TAllQuery } from './types';
-import { addUserToRoom, createGame, createRoom, updateRoom } from './room';
-import { getRoom, getUser, getUserNameByConnectionId } from './db/store';
+import {
+  addUserToRoom,
+  getAnserCreateGame,
+  createRoom,
+  getAnswerUpdateRoom,
+} from './room';
+import { getRoomByIndex, getUser, getUserNameByConnectionId } from './db/store';
+import { addGame, addShipsToGame } from './ships';
 
 export const wsServer = new WebSocketServer({ port: 3000 });
 
@@ -51,7 +57,7 @@ wsServer.on('connection', function connection(ws, req) {
         answer = await loginOrCreate(parsedData, connectionId);
         sendData(ws, answer);
 
-        answer = await updateRoom();
+        answer = await getAnswerUpdateRoom();
         sendDataToAllClients(answer);
 
         answer = await updateWinners();
@@ -68,7 +74,7 @@ wsServer.on('connection', function connection(ws, req) {
         if (name && userData) {
           await createRoom(name, userData.index);
 
-          answer = await updateRoom(true);
+          answer = await getAnswerUpdateRoom();
           sendDataToAllClients(answer);
         }
         break;
@@ -76,17 +82,21 @@ wsServer.on('connection', function connection(ws, req) {
       case 'add_user_to_room':
         const indexRoom = await addUserToRoom(parsedData, name ?? 'noname');
 
-        answer = await updateRoom(true);
+        answer = await getAnswerUpdateRoom();
         sendDataToAllClients(answer);
 
-        const room = await getRoom(indexRoom);
+        const room = await getRoomByIndex(indexRoom);
+        console.log('room', room);
 
-        // send only to concrete user
+        // send only to players in room
         if (room?.roomUsers.length === 2) {
+          const idGame = await addGame(room?.roomUsers ?? []);
+
           room?.roomUsers.forEach(async ({ name }) => {
             const user = await getUser(name);
             if (user) {
-              answer = await createGame(user.index);
+              // const idGame = (await getGames()).length;
+              answer = await getAnserCreateGame(idGame, user.index);
               const userWs = connections[user.connectionId];
               if (userWs) userWs.send(JSON.stringify(answer));
             }
@@ -95,6 +105,7 @@ wsServer.on('connection', function connection(ws, req) {
         break;
 
       case 'add_ships':
+        await addShipsToGame(parsedData);
         break;
 
       default:

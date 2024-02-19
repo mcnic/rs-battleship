@@ -7,8 +7,6 @@ export type TQueries =
   | 'create_game'
   | 'add_ships';
 
-export type TShipType = 'huge' | 'large' | 'medium' | 'small';
-
 export type TAllQuery = {
   type: TQueries;
   id: number;
@@ -22,6 +20,11 @@ export type TRegisterReqData = {
 
 export type TAddUserToRoomData = {
   indexRoom: number;
+};
+
+export type TCreateGameData = {
+  idGame: number;
+  idPlayer: number;
 };
 
 // export type TRegisterRespData = {

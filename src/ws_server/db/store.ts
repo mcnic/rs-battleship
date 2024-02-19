@@ -1,4 +1,3 @@
-import { TShipType } from 'ws_server/types';
 import { getStore, setStore } from './memoryStore';
 
 type TUser = {
@@ -9,7 +8,7 @@ type TUser = {
 
 type TStoreUsers = { [key: string]: TUser };
 
-type TRoomUser = {
+export type TRoomUser = {
   name: string;
   index: number;
 };
@@ -24,36 +23,47 @@ export type TWinner = {
   wins: number;
 };
 
-export type TGame = {
-  idGame: number;
-  idPlayer: number;
-};
-
-export type TShip = {
+export type TShipData = {
   position: { x: number; y: number };
   direction: boolean;
-  type: TShipType;
+  type: 'small' | 'medium' | 'large' | 'huge';
   length: number;
 };
+
+export type TPlayerGameDataRequest = {
+  gameId: number;
+  indexPlayer: number;
+  ships: TShipData[];
+};
+
+export type TPlayerGameData = {
+  ships?: TShipData[];
+};
+
+// key=idPlayer
+export type TGameData = { [key: number]: TPlayerGameData };
+
+// key=idGame
+export type TGame = { [key: number]: TGameData };
 
 export type TStore = {
   users: TStoreUsers;
   rooms: TRoom[];
   winners: TWinner[];
-  games: TGame[];
+  games: TGame;
 };
 
-const clearDB: TStore = {
+export const clearDB: TStore = {
   users: {},
   rooms: [],
   winners: [],
-  games: [],
+  games: {},
 };
 
 export const getUser = async (name: string): Promise<TUser | null> => {
   const store = (await getStore(clearDB)) as TStore;
 
-  console.log('users', store.users);
+  // console.log('users', store.users);
 
   return store.users[name] ?? null;
 };
@@ -75,7 +85,7 @@ export const addUser = async (
 
   await setStore(store, clearDB);
 
-  console.log('users', store.users);
+  // console.log('users', store.users);
 
   return index;
 };
@@ -118,7 +128,7 @@ export const getRooms = async (): Promise<TRoom[]> => {
   return store.rooms;
 };
 
-export const getRoom = async (
+export const getRoomByIndex = async (
   indexRoom: number,
 ): Promise<TRoom | undefined> => {
   const rooms = await getRooms();

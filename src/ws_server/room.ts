@@ -1,5 +1,5 @@
-import { TGame, TRoom, getRooms, setRooms } from './db/store';
-import { TAddUserToRoomData, TAllQuery } from './types';
+import { TRoom, getRooms, setRooms } from './db/store';
+import { TAddUserToRoomData, TAllQuery, TCreateGameData } from './types';
 
 export const createRoom = async (name: string, index: number) => {
   const rooms = await getRooms();
@@ -38,14 +38,11 @@ export const addUserToRoom = async (
   return indexRoom;
 };
 
-export const updateRoom = async (
-  onlyOnePlayer: boolean = false,
-): Promise<TAllQuery> => {
+export const getAnswerUpdateRoom = async (): Promise<TAllQuery> => {
   let rooms = await getRooms();
 
   // send rooms list, where only one player inside
-  if (onlyOnePlayer)
-    rooms = rooms.filter(({ roomUsers }) => roomUsers.length === 1);
+  rooms = rooms.filter(({ roomUsers }) => roomUsers.length === 1);
 
   const resp: TAllQuery = {
     type: 'update_room',
@@ -56,9 +53,12 @@ export const updateRoom = async (
   return resp;
 };
 
-export const createGame = async (idPlayer: number): Promise<TAllQuery> => {
-  const gameData: TGame = {
-    idGame: 0,
+export const getAnserCreateGame = async (
+  idGame: number,
+  idPlayer: number,
+): Promise<TAllQuery> => {
+  const gameData: TCreateGameData = {
+    idGame,
     idPlayer,
   };
 
