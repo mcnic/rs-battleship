@@ -3,7 +3,11 @@ export type TQueries =
   | 'update_winners'
   | 'create_room'
   | 'update_room'
-  | 'add_user_to_room';
+  | 'add_user_to_room'
+  | 'create_game'
+  | 'add_ships';
+
+export type TShipType = 'huge' | 'large' | 'medium' | 'small';
 
 export type TAllQuery = {
   type: TQueries;

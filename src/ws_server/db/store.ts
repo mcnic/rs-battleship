@@ -1,3 +1,4 @@
+import { TShipType } from 'ws_server/types';
 import { getStore, setStore } from './memoryStore';
 
 type TUser = {
@@ -23,16 +24,30 @@ export type TWinner = {
   wins: number;
 };
 
+export type TGame = {
+  idGame: number;
+  idPlayer: number;
+};
+
+export type TShip = {
+  position: { x: number; y: number };
+  direction: boolean;
+  type: TShipType;
+  length: number;
+};
+
 export type TStore = {
   users: TStoreUsers;
   rooms: TRoom[];
   winners: TWinner[];
+  games: TGame[];
 };
 
 const clearDB: TStore = {
   users: {},
   rooms: [],
   winners: [],
+  games: [],
 };
 
 export const getUser = async (name: string): Promise<TUser | null> => {
@@ -101,6 +116,14 @@ export const getRooms = async (): Promise<TRoom[]> => {
   const store = (await getStore(clearDB)) as TStore;
 
   return store.rooms;
+};
+
+export const getRoom = async (
+  indexRoom: number,
+): Promise<TRoom | undefined> => {
+  const rooms = await getRooms();
+
+  return rooms.find((room) => room.roomId === indexRoom);
 };
 
 export const setRooms = async (rooms: TRoom[]) => {
