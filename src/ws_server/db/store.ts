@@ -38,32 +38,16 @@ export type TPlayerGameDataRequest = {
   ships: TShipData[];
 };
 
-export type TPlayerGameData = {
-  ships?: TShipData[];
-};
-
-// key=idPlayer
-export type TGameData = { [key: number]: TPlayerGameData };
-
-// key=idGame
-export type TGame = { [key: number]: TGameData };
-
-export type TMyGame = { [key: number]: BattleshipGame };
-
 export type TStore = {
   users: TStoreUsers;
   rooms: TRoom[];
   winners: TWinner[];
-  games: TGame;
-  myGames: TMyGame;
 };
 
 export const clearDB: TStore = {
   users: {},
   rooms: [],
   winners: [],
-  games: {},
-  myGames: {},
 };
 
 export const getUserByName = async (name: string): Promise<TUser | null> => {
@@ -182,20 +166,4 @@ export const getWinners = async (): Promise<TWinner[]> => {
   const store = (await getStore(clearDB)) as TStore;
 
   return store.winners;
-};
-
-export const getGameByIndex = async (
-  index: number,
-): Promise<TGameData | undefined> => {
-  const store = (await getStore(clearDB)) as TStore;
-
-  return store.games[index];
-};
-
-export const getMyGameByIndex = async (
-  index: number,
-): Promise<BattleshipGame | undefined> => {
-  const store = (await getStore(clearDB)) as TStore;
-
-  return store.myGames[index];
 };
