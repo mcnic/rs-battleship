@@ -1,9 +1,11 @@
+import BattleshipGame from 'ws_server/battleshipGame';
 import { getStore, setStore } from './memoryStore';
 
 type TUser = {
   password: string;
   index: number;
   connectionId: string;
+  game?: BattleshipGame;
 };
 
 type TStoreUsers = { [key: string]: TUser };
@@ -46,11 +48,14 @@ export type TGameData = { [key: number]: TPlayerGameData };
 // key=idGame
 export type TGame = { [key: number]: TGameData };
 
+export type TMyGame = { [key: number]: BattleshipGame };
+
 export type TStore = {
   users: TStoreUsers;
   rooms: TRoom[];
   winners: TWinner[];
   games: TGame;
+  myGames: TMyGame;
 };
 
 export const clearDB: TStore = {
@@ -58,14 +63,27 @@ export const clearDB: TStore = {
   rooms: [],
   winners: [],
   games: {},
+  myGames: {},
 };
 
-export const getUser = async (name: string): Promise<TUser | null> => {
+export const getUserByName = async (name: string): Promise<TUser | null> => {
   const store = (await getStore(clearDB)) as TStore;
 
   // console.log('users', store.users);
 
   return store.users[name] ?? null;
+};
+
+export const getUserByIndex = async (
+  indexPlayer: number,
+): Promise<TUser | null> => {
+  const store = (await getStore(clearDB)) as TStore;
+  for (let key in store.users) {
+    if (store.users[key]?.index === indexPlayer)
+      return store.users[key] ?? null;
+  }
+
+  return null;
 };
 
 // todo: for learning project password is unprotected !!!
@@ -90,12 +108,28 @@ export const addUser = async (
   return index;
 };
 
-export const updateConnectinId = async (name: string, connectinId: string) => {
+export const updateUserConnectinId = async (
+  name: string,
+  connectinId: string,
+) => {
   const store = (await getStore(clearDB)) as TStore;
 
   const user = store.users[name];
   if (user) {
     user.connectionId = connectinId;
+    store.users = { ...store.users, [name]: user };
+    console.log('users', store.users);
+
+    await setStore(store, clearDB);
+  }
+};
+
+export const updateUserGame = async (name: string, game: BattleshipGame) => {
+  const store = (await getStore(clearDB)) as TStore;
+
+  const user = store.users[name];
+  if (user) {
+    user.game = game;
     store.users = { ...store.users, [name]: user };
     console.log('users', store.users);
 
@@ -148,4 +182,20 @@ export const getWinners = async (): Promise<TWinner[]> => {
   const store = (await getStore(clearDB)) as TStore;
 
   return store.winners;
+};
+
+export const getGameByIndex = async (
+  index: number,
+): Promise<TGameData | undefined> => {
+  const store = (await getStore(clearDB)) as TStore;
+
+  return store.games[index];
+};
+
+export const getMyGameByIndex = async (
+  index: number,
+): Promise<BattleshipGame | undefined> => {
+  const store = (await getStore(clearDB)) as TStore;
+
+  return store.myGames[index];
 };

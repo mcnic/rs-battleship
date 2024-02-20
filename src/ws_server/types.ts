@@ -5,7 +5,12 @@ export type TQueries =
   | 'update_room'
   | 'add_user_to_room'
   | 'create_game'
-  | 'add_ships';
+  | 'add_ships'
+  | 'start_game'
+  | 'turn'
+  | 'attack'
+  | 'randomAttack'
+  | 'finish';
 
 export type TAllQuery = {
   type: TQueries;

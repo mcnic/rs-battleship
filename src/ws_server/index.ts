@@ -8,12 +8,22 @@ import {
   createRoom,
   getAnswerUpdateRoom,
 } from './room';
-import { getRoomByIndex, getUser, getUserNameByConnectionId } from './db/store';
-import { addGame, addShipsToGame } from './ships';
+import {
+  TPlayerGameDataRequest,
+  getRoomByIndex,
+  getUserByIndex,
+  getUserByName,
+  getUserNameByConnectionId,
+  updateUserGame,
+} from './db/store';
+import { getAnserStartGame as getAnswerStartGame } from './ships';
+import BattleshipGame from './battleshipGame';
 
 export const wsServer = new WebSocketServer({ port: 3000 });
 
 const connections: { [key: string]: WebSocket } = {};
+
+let gameIdNum = 0;
 
 const sendData = (ws: WebSocket, data: Object) => {
   console.log('responce:', data);
@@ -46,71 +56,107 @@ wsServer.on('connection', function connection(ws, req) {
 
   ws.on('message', async (data) => {
     const parsedData: TAllQuery = JSON.parse(data.toString());
-    const name = await getUserNameByConnectionId(connectionId);
     const type = parsedData.type;
+    const name = await getUserNameByConnectionId(connectionId);
+    let user = await getUserByName(name ?? '');
     let answer: TAllQuery;
 
     console.log('\nrequest:', parsedData);
 
-    switch (type) {
-      case 'reg':
-        answer = await loginOrCreate(parsedData, connectionId);
-        sendData(ws, answer);
-
-        answer = await getAnswerUpdateRoom();
-        sendDataToAllClients(answer);
-
-        answer = await updateWinners();
-        sendDataToAllClients(answer);
-        break;
-
-      case 'update_winners':
-        answer = await updateWinners();
-        sendDataToAllClients(answer);
-        break;
-
-      case 'create_room':
-        const userData = await getUser(name ?? '');
-        if (name && userData) {
-          await createRoom(name, userData.index);
+    try {
+      switch (type) {
+        case 'reg':
+          answer = await loginOrCreate(parsedData, connectionId);
+          sendData(ws, answer);
 
           answer = await getAnswerUpdateRoom();
           sendDataToAllClients(answer);
-        }
-        break;
 
-      case 'add_user_to_room':
-        const indexRoom = await addUserToRoom(parsedData, name ?? 'noname');
+          answer = await updateWinners();
+          sendDataToAllClients(answer);
+          break;
 
-        answer = await getAnswerUpdateRoom();
-        sendDataToAllClients(answer);
+        case 'update_winners':
+          answer = await updateWinners();
+          sendDataToAllClients(answer);
+          break;
 
-        const room = await getRoomByIndex(indexRoom);
-        console.log('room', room);
+        case 'create_room':
+          const userData = await getUserByName(name ?? '');
+          if (name && userData) {
+            await createRoom(name, userData.index);
 
-        // send only to players in room
-        if (room?.roomUsers.length === 2) {
-          const idGame = await addGame(room?.roomUsers ?? []);
+            answer = await getAnswerUpdateRoom();
+            sendDataToAllClients(answer);
+          }
+          break;
 
-          room?.roomUsers.forEach(async ({ name }) => {
-            const user = await getUser(name);
+        case 'add_user_to_room':
+          const indexRoom = await addUserToRoom(parsedData, name ?? 'noname');
+
+          answer = await getAnswerUpdateRoom();
+          sendDataToAllClients(answer);
+
+          const room = await getRoomByIndex(indexRoom);
+          console.log('room', room);
+
+          if (room === undefined) throw new Error('wronngroom');
+          if (room.roomUsers.length !== 2)
+            throw new Error('wronng players number');
+
+          const newBattleGame = new BattleshipGame(gameIdNum++);
+          room.roomUsers.forEach((user) =>
+            updateUserGame(user.name, newBattleGame),
+          );
+
+          // send only to players in room
+          const myGameId = newBattleGame.getGameId();
+
+          room.roomUsers.forEach(async ({ name }) => {
+            const user = await getUserByName(name);
             if (user) {
-              // const idGame = (await getGames()).length;
-              answer = await getAnserCreateGame(idGame, user.index);
+              answer = await getAnserCreateGame(myGameId, user.index);
               const userWs = connections[user.connectionId];
               if (userWs) userWs.send(JSON.stringify(answer));
             }
           });
-        }
-        break;
 
-      case 'add_ships':
-        await addShipsToGame(parsedData);
-        break;
+          break;
 
-      default:
-        console.log('<-- unknown  type', parsedData);
-        break;
+        case 'add_ships':
+          if (!user || !user.game) throw new Error('wrong user');
+
+          // const { indexPlayer, gameId, ships } = await addShipsToGame(parsedData);
+          const { indexPlayer, ships }: TPlayerGameDataRequest = JSON.parse(
+            parsedData.data,
+          );
+
+          const userGame = user.game;
+          userGame.addPlayer(indexPlayer, ships);
+
+          if (userGame.gameCanBeStart()) {
+            for (let pleyerData of userGame.getPlayersData()) {
+              answer = getAnswerStartGame(
+                pleyerData.indexPlayer,
+                pleyerData.ships,
+              );
+
+              user = await getUserByIndex(pleyerData.indexPlayer);
+
+              if (user && user.game) {
+                const userWs = connections[user.connectionId];
+                if (userWs) userWs.send(JSON.stringify(answer));
+              }
+            }
+          }
+          break;
+
+        default:
+          console.log('<-- unknown  type', parsedData);
+          break;
+      }
+    } catch (error) {
+      console.log(error);
     }
   });
 });

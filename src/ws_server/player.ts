@@ -1,4 +1,9 @@
-import { addUser, getUser, getWinners, updateConnectinId } from './db/store';
+import {
+  addUser,
+  getUserByName,
+  getWinners,
+  updateUserConnectinId,
+} from './db/store';
 import { TAllQuery, TRegisterReqData } from './types';
 
 export const loginOrCreate = async (
@@ -9,13 +14,13 @@ export const loginOrCreate = async (
   const { name, password } = realData;
   const { type, id } = data;
 
-  const userDataOrNull = await getUser(name);
+  const userDataOrNull = await getUserByName(name);
   let resp: TAllQuery;
 
   if (userDataOrNull !== null) {
     if (userDataOrNull.password === password) {
       // user is correct
-      await updateConnectinId(name, connectionId);
+      await updateUserConnectinId(name, connectionId);
 
       resp = {
         type,
