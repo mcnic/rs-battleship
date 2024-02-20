@@ -14,6 +14,8 @@ export type TQueries =
   | 'randomAttack'
   | 'finish';
 
+export type TShotStatus = 'miss' | 'killed' | 'shot';
+
 export type TAllQuery = {
   type: TQueries;
   id: number;
@@ -69,4 +71,16 @@ export type TUser = {
   index: number;
   connectionId: string;
   game?: BattleshipGame;
+};
+
+export type TAttackResp = {
+  gameId: number;
+  indexPlayer: number;
+};
+
+export type TRandomAttack = {
+  x: number;
+  y: number;
+  currentPlayer: number;
+  status: TShotStatus;
 };

@@ -1,4 +1,4 @@
-import { TShipData } from './types';
+import { TRandomAttack, TShipData } from './types';
 import { TAllQuery } from './types';
 
 export const getAnserTurn = async (
@@ -24,21 +24,12 @@ class BattleshipGame {
   status: 'wait' | 'run' | 'win' = 'wait';
   gameId: number;
   playersData: TPlayerData[] = [];
-  currentPlayer: number;
+  currentPlayer: number; // 0 or 1 = index in playersData
 
   constructor(gameId: number) {
     this.gameId = gameId;
 
     this.currentPlayer = Math.random() < 0.5 ? 0 : 1;
-    // for (let id in gameData) {
-    //   this.playersData.push({
-    //     indexPlayer: Number(id),
-    //     ships: gameData[id]?.ships ?? [],
-    //   });
-    // }
-
-    // this.currentPlayer = Math.random() < 0.5 ? 0 : 1;
-    // console.log('playerData', this.playersData);
   }
 
   addPlayer(indexPlayer: number, ships: TShipData[]) {
@@ -64,8 +55,44 @@ class BattleshipGame {
     return this.playersData;
   }
 
-  gameCanBeStart() {
-    return this.playersData.length === 2;
+  getNextPlayer(): number {
+    this.currentPlayer++;
+    if (this.currentPlayer > 1) this.currentPlayer = 0;
+
+    return this.playersData[this.currentPlayer]?.indexPlayer!;
+  }
+
+  getStatus() {
+    return this.status;
+  }
+
+  startGame() {
+    if (this.playersData.length === 2) {
+      this.status = 'run';
+      return true;
+    }
+
+    return false;
+  }
+
+  getRandomCoord() {
+    let coord = Math.round(Math.random() * 10);
+    if (coord > 9) coord = 0;
+
+    return coord;
+  }
+
+  //todo: coords hasn't repeate, status must checked
+  getRandomShoot(): TRandomAttack {
+    const playerId = this.currentPlayer === 1 ? 0 : 1;
+    const res: TRandomAttack = {
+      x: this.getRandomCoord(),
+      y: this.getRandomCoord(),
+      currentPlayer: this.playersData[playerId]?.indexPlayer!,
+      status: 'miss',
+    };
+
+    return res;
   }
 }
 

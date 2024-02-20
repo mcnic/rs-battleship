@@ -55,10 +55,10 @@ export const getAnswerUpdateRoom = async (): Promise<TAllQuery> => {
   return resp;
 };
 
-export const getAnserCreateGame = async (
+export const getAnswerCreateGame = (
   idGame: number,
   idPlayer: number,
-): Promise<TAllQuery> => {
+): TAllQuery => {
   const gameData: TCreateGameData = {
     idGame,
     idPlayer,

@@ -1,10 +1,10 @@
 import { WebSocket, WebSocketServer } from 'ws';
 import 'dotenv/config';
 import { loginOrCreate, getAnserUpdateWinners } from './player';
-import { TAllQuery } from './types';
+import { TAllQuery, TUser } from './types';
 import {
   addUserToRoom,
-  getAnserCreateGame,
+  getAnswerCreateGame,
   createRoom,
   getAnswerUpdateRoom,
 } from './room';
@@ -18,6 +18,7 @@ import { TPlayerGameDataRequest } from './types';
 import { getRoomByIndex } from './room';
 import { getAnserStartGame as getAnswerStartGame } from './ships';
 import BattleshipGame from './battleshipGame';
+import { getAnswerAttack, getAnswerTurn, parseRandomAtack } from './game';
 
 export const wsServer = new WebSocketServer({ port: 3000 });
 
@@ -35,6 +36,18 @@ const sendDataToAllClients = (data: Object) => {
   console.log('responce to all:', data);
   const stringData = JSON.stringify(data);
   wsServer.clients.forEach((client) => client.send(stringData));
+};
+
+const sendDataToAllUsersInGame = (user: TUser, answer: TAllQuery) => {
+  if (user && user.game) {
+    user.game.getPlayersData().forEach(async ({ indexPlayer }) => {
+      const userToSend = await getUserByIndex(indexPlayer);
+      if (userToSend) {
+        const userWs = connections[userToSend.connectionId];
+        if (userWs) userWs.send(JSON.stringify(answer));
+      }
+    });
+  }
 };
 
 wsServer.on('connection', function connection(ws, req) {
@@ -104,18 +117,18 @@ wsServer.on('connection', function connection(ws, req) {
           if (room.roomUsers.length !== 2)
             throw new Error('wronng players number');
 
-          const newBattleGame = new BattleshipGame(gameIdNum++);
+          const battleGame = new BattleshipGame(gameIdNum++);
           room.roomUsers.forEach((user) =>
-            updateUserGame(user.name, newBattleGame),
+            updateUserGame(user.name, battleGame),
           );
 
           // send only to players in room
-          const myGameId = newBattleGame.getGameId();
+          const myGameId = battleGame.getGameId();
 
           room.roomUsers.forEach(async ({ name }) => {
             const user = await getUserByName(name);
             if (user) {
-              answer = await getAnserCreateGame(myGameId, user.index);
+              answer = getAnswerCreateGame(myGameId, user.index);
               const userWs = connections[user.connectionId];
               if (userWs) userWs.send(JSON.stringify(answer));
             }
@@ -126,7 +139,6 @@ wsServer.on('connection', function connection(ws, req) {
         case 'add_ships':
           if (!user || !user.game) throw new Error('wrong user');
 
-          // const { indexPlayer, gameId, ships } = await addShipsToGame(parsedData);
           const { indexPlayer, ships }: TPlayerGameDataRequest = JSON.parse(
             parsedData.data,
           );
@@ -134,7 +146,7 @@ wsServer.on('connection', function connection(ws, req) {
           const userGame = user.game;
           userGame.addPlayer(indexPlayer, ships);
 
-          if (userGame.gameCanBeStart()) {
+          if (userGame.startGame()) {
             for (let pleyerData of userGame.getPlayersData()) {
               answer = getAnswerStartGame(
                 pleyerData.indexPlayer,
@@ -142,12 +154,28 @@ wsServer.on('connection', function connection(ws, req) {
               );
 
               user = await getUserByIndex(pleyerData.indexPlayer);
+              if (!user) throw new Error('wrong_user');
 
-              if (user && user.game) {
-                const userWs = connections[user.connectionId];
-                if (userWs) userWs.send(JSON.stringify(answer));
-              }
+              const userWs = connections[user.connectionId];
+              if (userWs) userWs.send(JSON.stringify(answer));
             }
+
+            answer = await getAnswerTurn(userGame.getNextPlayer());
+            sendDataToAllUsersInGame(user, answer);
+          }
+          break;
+
+        case 'randomAttack':
+          const { gameId, indexPlayer: attackPlayer } =
+            parseRandomAtack(parsedData);
+          console.log('random attack', gameId, attackPlayer);
+
+          if (user && user.game) {
+            answer = await getAnswerTurn(user.game.getNextPlayer());
+            sendDataToAllUsersInGame(user, answer);
+
+            answer = getAnswerAttack(user.game.getRandomShoot());
+            sendDataToAllUsersInGame(user, answer);
           }
           break;
 
