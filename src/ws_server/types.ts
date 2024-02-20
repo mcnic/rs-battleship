@@ -1,3 +1,5 @@
+import BattleshipGame from 'ws_server/battleshipGame';
+
 export type TQueries =
   | 'reg'
   | 'update_winners'
@@ -32,31 +34,39 @@ export type TCreateGameData = {
   idPlayer: number;
 };
 
-// export type TRegisterRespData = {
-//   name: string;
-//   index: number;
-//   error: boolean;
-//   errorText: string;
-// };
+export type TStoreUsers = { [key: string]: TUser };
 
-// export type TWinnerRespData = {
-//   name: string;
-//   wins: number;
-// };
+export type TRoomUser = {
+  name: string;
+  index: number;
+};
 
-// export type TUpdateRoomRespData = {
-//   roomId: number;
-//   roomUsers: [
-//     {
-//       name: string;
-//       index: number;
-//     },
-//   ];
-// };
+export type TRoom = {
+  roomId: number;
+  roomUsers: TRoomUser[];
+};
 
-// export type TUpdateWinnersRespData = [
-//   {
-//     name: string;
-//     wins: number;
-//   },
-// ];
+export type TWinner = {
+  name: string;
+  wins: number;
+};
+
+export type TShipData = {
+  position: { x: number; y: number };
+  direction: boolean;
+  type: 'small' | 'medium' | 'large' | 'huge';
+  length: number;
+};
+
+export type TPlayerGameDataRequest = {
+  gameId: number;
+  indexPlayer: number;
+  ships: TShipData[];
+};
+
+export type TUser = {
+  password: string;
+  index: number;
+  connectionId: string;
+  game?: BattleshipGame;
+};

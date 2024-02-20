@@ -1,5 +1,7 @@
-import { TRoom, getRooms, setRooms } from './db/store';
+import { setRooms } from './db/store';
+import { TRoom } from './types';
 import { TAddUserToRoomData, TAllQuery, TCreateGameData } from './types';
+import { getRooms } from './db/store';
 
 export const createRoom = async (name: string, index: number) => {
   const rooms = await getRooms();
@@ -69,4 +71,12 @@ export const getAnserCreateGame = async (
   };
 
   return resp;
+};
+
+export const getRoomByIndex = async (
+  indexRoom: number,
+): Promise<TRoom | undefined> => {
+  const rooms = await getRooms();
+
+  return rooms.find((room) => room.roomId === indexRoom);
 };

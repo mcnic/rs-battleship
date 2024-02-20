@@ -1,6 +1,6 @@
 import { WebSocket, WebSocketServer } from 'ws';
 import 'dotenv/config';
-import { loginOrCreate, updateWinners } from './player';
+import { loginOrCreate, getAnserUpdateWinners } from './player';
 import { TAllQuery } from './types';
 import {
   addUserToRoom,
@@ -9,13 +9,13 @@ import {
   getAnswerUpdateRoom,
 } from './room';
 import {
-  TPlayerGameDataRequest,
-  getRoomByIndex,
   getUserByIndex,
   getUserByName,
   getUserNameByConnectionId,
   updateUserGame,
 } from './db/store';
+import { TPlayerGameDataRequest } from './types';
+import { getRoomByIndex } from './room';
 import { getAnserStartGame as getAnswerStartGame } from './ships';
 import BattleshipGame from './battleshipGame';
 
@@ -72,12 +72,12 @@ wsServer.on('connection', function connection(ws, req) {
           answer = await getAnswerUpdateRoom();
           sendDataToAllClients(answer);
 
-          answer = await updateWinners();
+          answer = await getAnserUpdateWinners();
           sendDataToAllClients(answer);
           break;
 
         case 'update_winners':
-          answer = await updateWinners();
+          answer = await getAnserUpdateWinners();
           sendDataToAllClients(answer);
           break;
 

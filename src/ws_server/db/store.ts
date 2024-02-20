@@ -1,42 +1,8 @@
+// only func using getStore() or setStore()
 import BattleshipGame from 'ws_server/battleshipGame';
 import { getStore, setStore } from './memoryStore';
-
-type TUser = {
-  password: string;
-  index: number;
-  connectionId: string;
-  game?: BattleshipGame;
-};
-
-type TStoreUsers = { [key: string]: TUser };
-
-export type TRoomUser = {
-  name: string;
-  index: number;
-};
-
-export type TRoom = {
-  roomId: number;
-  roomUsers: TRoomUser[];
-};
-
-export type TWinner = {
-  name: string;
-  wins: number;
-};
-
-export type TShipData = {
-  position: { x: number; y: number };
-  direction: boolean;
-  type: 'small' | 'medium' | 'large' | 'huge';
-  length: number;
-};
-
-export type TPlayerGameDataRequest = {
-  gameId: number;
-  indexPlayer: number;
-  ships: TShipData[];
-};
+import { TStoreUsers, TRoom, TWinner } from 'ws_server/types';
+import { TUser } from 'ws_server/types';
 
 export type TStore = {
   users: TStoreUsers;
@@ -144,14 +110,6 @@ export const getRooms = async (): Promise<TRoom[]> => {
   const store = (await getStore(clearDB)) as TStore;
 
   return store.rooms;
-};
-
-export const getRoomByIndex = async (
-  indexRoom: number,
-): Promise<TRoom | undefined> => {
-  const rooms = await getRooms();
-
-  return rooms.find((room) => room.roomId === indexRoom);
 };
 
 export const setRooms = async (rooms: TRoom[]) => {

@@ -64,7 +64,7 @@ export const loginOrCreate = async (
   return resp;
 };
 
-export const updateWinners = async (): Promise<TAllQuery> => {
+export const getAnserUpdateWinners = async (): Promise<TAllQuery> => {
   const winners = await getWinners();
 
   const resp: TAllQuery = {

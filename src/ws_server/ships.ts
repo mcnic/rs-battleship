@@ -1,4 +1,4 @@
-import { TShipData } from './db/store';
+import { TShipData } from './types';
 import { TAllQuery } from './types';
 
 export const getAnserStartGame = (
