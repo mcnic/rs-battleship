@@ -147,13 +147,13 @@ wsServer.on('connection', function connection(ws, req) {
           userGame.addPlayer(indexPlayer, ships);
 
           if (userGame.startGame()) {
-            for (let pleyerData of userGame.getPlayersData()) {
+            for (let playerData of userGame.getPlayersData()) {
               answer = getAnswerStartGame(
-                pleyerData.indexPlayer,
-                pleyerData.ships,
+                playerData.indexPlayer,
+                playerData.ships,
               );
 
-              user = await getUserByIndex(pleyerData.indexPlayer);
+              user = await getUserByIndex(playerData.indexPlayer);
               if (!user) throw new Error('wrong_user');
 
               const userWs = connections[user.connectionId];
