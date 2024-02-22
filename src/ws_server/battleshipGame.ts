@@ -1,4 +1,4 @@
-import { TRandomAttack, TShipData, TShotStatus } from './types';
+import { TRandomAttack, TShipData, TShootData, TShotStatus } from './types';
 import { TAllQuery } from './types';
 
 export const getAnserTurn = async (
@@ -26,7 +26,8 @@ class BattleshipGame {
   status: 'wait' | 'run' | 'win' = 'wait';
   gameId: number;
   playersData: TPlayerData[] = [];
-  currentPlayer: number; // 0 or 1 = index in playersData
+  /**  0 or 1 = index in playersData */
+  currentPlayer: number;
 
   constructor(gameId: number) {
     this.gameId = gameId;
@@ -62,12 +63,18 @@ class BattleshipGame {
     shootY: number,
   ): TShotStatus {
     const { dots, ships } = playerData;
-    if (dots[shootY]![shootX] === 0) return 'miss';
 
+    if (dots[shootY]![shootX] === 0) {
+      dots[shootY]![shootX] = 2;
+      return 'miss';
+    }
+
+    dots[shootY]![shootX] = 3;
     let status: TShotStatus = 'shot';
 
     ships.forEach(({ position, direction, length }) => {
-      const { x, y } = position;
+      const x = Number(position.x);
+      const y = Number(position.y);
       let isThisShipHitted = false;
 
       if (direction) {
@@ -76,21 +83,22 @@ class BattleshipGame {
         isThisShipHitted = y === shootY && x <= shootX && shootX <= x + length;
       }
 
-      console.log('isThisShipHitted', isThisShipHitted);
-
       if (isThisShipHitted) {
         let hitPoints = 0;
+
         if (direction) {
           for (let i = 0; i < length; i++) {
-            if (dots[x]![y + i]!) hitPoints++;
+            // console.log(`check (${x}, ${y})`, dots[y + i]![x]!);
+            if (dots[y + i]![x]! === 3) hitPoints++;
           }
         } else {
           for (let i = 0; i < length; i++) {
-            if (dots[x + i]![y]!) hitPoints++;
+            // console.log(`check2 (${x}, ${y})`, dots[y]![x+i]!);
+            if (dots[y]![x + i]! === 3) hitPoints++;
           }
         }
 
-        return hitPoints === length ? 'killed' : 'shot';
+        status = hitPoints === length ? 'killed' : 'shot';
       }
     });
 
@@ -105,13 +113,6 @@ class BattleshipGame {
       ships,
       dots: this.getDotsFromShips(ships),
     });
-
-    console.log(
-      'addPlayer',
-      this.playersData[this.playersData.length - 1]?.indexPlayer,
-      this.playersData[this.playersData.length - 1]?.ships,
-    );
-    this.printPrettyDots(this.playersData[this.playersData.length - 1]?.dots!);
   }
 
   getGameId() {
@@ -126,11 +127,13 @@ class BattleshipGame {
     return this.playersData;
   }
 
-  getNextPlayer(): number {
-    this.currentPlayer++;
-    if (this.currentPlayer > 1) this.currentPlayer = 0;
+  getPlayer(): number {
+    return this.playersData[this.currentPlayer]!.indexPlayer!;
+  }
 
-    return this.playersData[this.currentPlayer]?.indexPlayer!;
+  getNextPlayer(): number {
+    this.currentPlayer = this.currentPlayer ? 0 : 1;
+    return this.getPlayer();
   }
 
   getStatus() {
@@ -154,21 +157,15 @@ class BattleshipGame {
   }
 
   printPrettyDots(dots: number[][]) {
-    console.log('dots:');
     for (let y = 0; y < 10; y++) console.log(dots[y]?.join(' '));
   }
 
-  getRandomShoot(): TRandomAttack {
-    const playerId = this.currentPlayer === 1 ? 0 : 1;
-    const { dots, indexPlayer } = this.playersData[playerId]!;
+  getRandomShootData(playerId: number): TShootData {
+    const { dots } = this.playersData[playerId]!;
     let x = 0,
       y = 0,
       dot = 0;
-
-    // const dots = this.playersData[playerId]?.dots!;
     let shottIsOk = true;
-
-    // console.log('dots', dots);
 
     if (shottIsOk) {
       shottIsOk = true;
@@ -176,11 +173,18 @@ class BattleshipGame {
       y = this.getRandomCoord();
       dot = dots[y]![x]!;
 
-      // console.log('dot status', dot);
-
       // dot is hitted yet, need getting new coords
       if ([2, 3].includes(dot)) shottIsOk = false;
     }
+
+    return {
+      x,
+      y,
+    };
+  }
+
+  getShootResult(playerId: number, { x, y }: TShootData): TRandomAttack {
+    const { indexPlayer } = this.playersData[playerId]!;
 
     const status: TShotStatus = this.getShipStatusByCoords(
       this.playersData[playerId]!,
@@ -188,33 +192,32 @@ class BattleshipGame {
       y,
     );
 
-    dots[y]![x] = status === 'miss' ? 2 : 3;
-
-    console.log('shoot', x, y);
-    this.printPrettyDots(dots);
+    // console.log(`shoot to player '${playerId}': (${x}, ${y})`);
+    // this.printPrettyDots(dots);
+    // console.log(`status '${status}'`);
 
     const res: TRandomAttack = {
-      x: this.getRandomCoord(),
-      y: this.getRandomCoord(),
-      currentPlayer: indexPlayer,
+      x,
+      y,
+      currentPlayer: indexPlayer ? 0 : 1,
       status,
     };
 
+    this.checkIsGameOver(playerId);
+
     return res;
+  }
+
+  checkIsGameOver(playerId: number) {
+    const { dots } = this.playersData[playerId]!;
+
+    const aliveDots = [...dots].map((dot) => dot.includes(1));
+    if (!aliveDots.includes(true)) this.status = 'win';
+  }
+
+  isGameFinished() {
+    return this.status === 'win';
   }
 }
 
 export default BattleshipGame;
-
-// const t = [
-//   [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-//   [0, 0, 1, 1, 1, 0, 0, 0, 1, 0],
-//   [0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
-//   [1, 1, 0, 1, 0, 0, 0, 0, 0, 0],
-//   [0, 0, 0, 0, 0, 0, 1, 0, 1, 0],
-//   [0, 0, 0, 1, 0, 0, 1, 0, 0, 0],
-//   [0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-//   [0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-//   [0, 1, 1, 1, 0, 0, 0, 0, 1, 1],
-//   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-// ];

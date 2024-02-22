@@ -1,7 +1,7 @@
 import { WebSocket, WebSocketServer } from 'ws';
 import 'dotenv/config';
 import { loginOrCreate, getAnserUpdateWinners } from './player';
-import { TAllQuery, TUser } from './types';
+import { TAllQuery, TShootData, TUser } from './types';
 import {
   addUserToRoom,
   getAnswerCreateGame,
@@ -18,7 +18,14 @@ import { TPlayerGameDataRequest } from './types';
 import { getRoomByIndex } from './room';
 import { getAnserStartGame as getAnswerStartGame } from './ships';
 import BattleshipGame from './battleshipGame';
-import { getAnswerAttack, getAnswerTurn, parseRandomAtack } from './game';
+import {
+  getAnsweUpdateWinners,
+  getAnswerAttack,
+  getAnswerFinishGame,
+  getAnswerTurn,
+  parseAtack,
+  parseRandomAtack,
+} from './game';
 
 export const wsServer = new WebSocketServer({ port: 3000 });
 
@@ -44,9 +51,47 @@ const sendDataToAllUsersInGame = (user: TUser, answer: TAllQuery) => {
       const userToSend = await getUserByIndex(indexPlayer);
       if (userToSend) {
         const userWs = connections[userToSend.connectionId];
+        console.log('responce to', userToSend.index, ':', answer);
         if (userWs) userWs.send(JSON.stringify(answer));
       }
     });
+  }
+};
+
+const doAttack = (
+  user: TUser,
+  game: BattleshipGame,
+  playerId: number,
+  shootData: TShootData,
+) => {
+  let answer: TAllQuery;
+
+  if (playerId === game.getCurrentPlayer())
+    throw new Error('wrong player for attack');
+
+  if (game.isGameFinished()) {
+    answer = getAnsweUpdateWinners();
+    sendDataToAllUsersInGame(user, answer);
+    return;
+  }
+
+  const attackData = game.getShootResult(playerId, shootData);
+
+  answer = getAnswerAttack(attackData);
+  sendDataToAllUsersInGame(user, answer);
+
+  answer =
+    attackData.status === 'miss'
+      ? getAnswerTurn(game.getNextPlayer())
+      : getAnswerTurn(game.getPlayer());
+  sendDataToAllUsersInGame(user, answer);
+
+  if (game.isGameFinished()) {
+    answer = getAnswerFinishGame(game.getNextPlayer());
+    sendDataToAllUsersInGame(user, answer);
+
+    answer = getAnsweUpdateWinners();
+    sendDataToAllUsersInGame(user, answer);
   }
 };
 
@@ -166,16 +211,20 @@ wsServer.on('connection', function connection(ws, req) {
           break;
 
         case 'randomAttack':
-          const { gameId, indexPlayer: attackPlayer } =
-            parseRandomAtack(parsedData);
-          console.log('random attack', gameId, attackPlayer);
-
           if (user && user.game) {
-            answer = await getAnswerTurn(user.game.getNextPlayer());
-            sendDataToAllUsersInGame(user, answer);
+            const { game } = user;
+            const playerId = parseRandomAtack(parsedData).indexPlayer;
+            const shootData = game.getRandomShootData(playerId);
+            doAttack(user, game, playerId, shootData);
+          }
+          break;
 
-            answer = getAnswerAttack(user.game.getRandomShoot());
-            sendDataToAllUsersInGame(user, answer);
+        case 'attack':
+          if (user && user.game) {
+            const { game } = user;
+            const { x, y, indexPlayer } = parseAtack(parsedData);
+            const shootData: TShootData = { x, y };
+            doAttack(user, game, indexPlayer, shootData);
           }
           break;
 

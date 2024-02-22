@@ -73,7 +73,14 @@ export type TUser = {
   game?: BattleshipGame;
 };
 
-export type TAttackResp = {
+export type TAttackReq = {
+  gameId: number;
+  x: number;
+  y: number;
+  indexPlayer: number;
+};
+
+export type TRamdomAttackReq = {
   gameId: number;
   indexPlayer: number;
 };
@@ -83,4 +90,9 @@ export type TRandomAttack = {
   y: number;
   currentPlayer: number;
   status: TShotStatus;
+};
+
+export type TShootData = {
+  x: number;
+  y: number;
 };
