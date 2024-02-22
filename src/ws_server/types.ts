@@ -48,10 +48,7 @@ export type TRoom = {
   roomUsers: TRoomUser[];
 };
 
-export type TWinner = {
-  name: string;
-  wins: number;
-};
+export type TWinners = { [key: string]: number };
 
 export type TShipData = {
   position: { x: number; y: number };

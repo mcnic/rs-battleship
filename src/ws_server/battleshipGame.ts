@@ -15,6 +15,7 @@ export const getAnserTurn = async (
 
 export type TPlayerData = {
   indexPlayer: number;
+  name: string;
   ships: TShipData[];
   /**  coords [y][x];  value = 0 = clear, 1 = occupied by ship, 2 = missed, 3 = hit part of ship */
   dots: number[][];
@@ -105,11 +106,12 @@ class BattleshipGame {
     return status;
   }
 
-  addPlayer(indexPlayer: number, ships: TShipData[]) {
+  addPlayer(indexPlayer: number, name: string, ships: TShipData[]) {
     if (this.playersData.length > 1) throw new Error('wrong player number');
 
     this.playersData.push({
       indexPlayer,
+      name,
       ships,
       dots: this.getDotsFromShips(ships),
     });
@@ -127,13 +129,24 @@ class BattleshipGame {
     return this.playersData;
   }
 
-  getPlayer(): number {
+  getCurrentPlayersData(): TPlayerData | undefined {
+    return this.playersData[this.currentPlayer];
+  }
+
+  getAnotherCurrentPlayersData(): TPlayerData | undefined {
+    return this.playersData[this.currentPlayer ? 0 : 1];
+  }
+
+  getPlayerIndex(): number {
     return this.playersData[this.currentPlayer]!.indexPlayer!;
   }
 
-  getNextPlayer(): number {
+  changePlayer() {
     this.currentPlayer = this.currentPlayer ? 0 : 1;
-    return this.getPlayer();
+  }
+
+  getAnotherPlayersIndex(): number {
+    return this.currentPlayer ? 0 : 1;
   }
 
   getStatus() {

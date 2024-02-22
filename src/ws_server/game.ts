@@ -3,6 +3,7 @@ import {
   TAttackReq,
   TRamdomAttackReq,
   TRandomAttack,
+  TWinners,
 } from './types';
 
 export const getAnswerTurn = (currentPlayer: number): TAllQuery => {
@@ -63,13 +64,11 @@ export const getAnswerFinishGame = (winPlayer: number): TAllQuery => {
   return resp;
 };
 
-export const getAnsweUpdateWinners = (): TAllQuery => {
-  const gameData = [
-    {
-      name: '<string>',
-      wins: '<number>',
-    },
-  ];
+export const getAnsweUpdateWinners = (winners: TWinners): TAllQuery => {
+  const gameData = Object.keys(winners).map((name) => ({
+    name,
+    wins: winners[name],
+  }));
 
   const resp: TAllQuery = {
     type: 'update_winners',

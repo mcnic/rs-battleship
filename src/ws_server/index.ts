@@ -9,9 +9,11 @@ import {
   getAnswerUpdateRoom,
 } from './room';
 import {
+  addWinner,
   getUserByIndex,
   getUserByName,
   getUserNameByConnectionId,
+  getWinners,
   updateUserGame,
 } from './db/store';
 import { TPlayerGameDataRequest } from './types';
@@ -58,7 +60,7 @@ const sendDataToAllUsersInGame = (user: TUser, answer: TAllQuery) => {
   }
 };
 
-const doAttack = (
+const doAttack = async (
   user: TUser,
   game: BattleshipGame,
   playerId: number,
@@ -70,7 +72,7 @@ const doAttack = (
     throw new Error('wrong player for attack');
 
   if (game.isGameFinished()) {
-    answer = getAnsweUpdateWinners();
+    answer = getAnsweUpdateWinners(await getWinners());
     sendDataToAllUsersInGame(user, answer);
     return;
   }
@@ -80,17 +82,18 @@ const doAttack = (
   answer = getAnswerAttack(attackData);
   sendDataToAllUsersInGame(user, answer);
 
-  answer =
-    attackData.status === 'miss'
-      ? getAnswerTurn(game.getNextPlayer())
-      : getAnswerTurn(game.getPlayer());
+  if (attackData.status === 'miss') game.changePlayer();
+
+  answer = getAnswerTurn(game.getPlayerIndex());
   sendDataToAllUsersInGame(user, answer);
 
   if (game.isGameFinished()) {
-    answer = getAnswerFinishGame(game.getNextPlayer());
+    answer = getAnswerFinishGame(game.getAnotherPlayersIndex());
     sendDataToAllUsersInGame(user, answer);
 
-    answer = getAnsweUpdateWinners();
+    addWinner(game.getAnotherCurrentPlayersData()?.name ?? 'noname');
+
+    answer = getAnsweUpdateWinners(await getWinners());
     sendDataToAllUsersInGame(user, answer);
   }
 };
@@ -99,15 +102,10 @@ wsServer.on('connection', function connection(ws, req) {
   let connectionId = req.headers['sec-websocket-key'] as string;
   console.log('connection established with', connectionId);
   connections[connectionId] = ws;
-  //todo: add User to subscribers
-  // wsServer.clients.forEach((client)=> client.send());
 
   ws.on('close', () => {
     console.log('connection closed with', connectionId);
     delete connections[connectionId];
-    // let connectionId = req.headers['sec-websocket-key'] as string;
-    // todo: remove User from subscribers
-    // todo: remove from room?
   });
 
   ws.on('error', console.error);
@@ -115,7 +113,7 @@ wsServer.on('connection', function connection(ws, req) {
   ws.on('message', async (data) => {
     const parsedData: TAllQuery = JSON.parse(data.toString());
     const type = parsedData.type;
-    const name = await getUserNameByConnectionId(connectionId);
+    const name = (await getUserNameByConnectionId(connectionId)) ?? '';
     let user = await getUserByName(name ?? '');
     let answer: TAllQuery;
 
@@ -189,7 +187,7 @@ wsServer.on('connection', function connection(ws, req) {
           );
 
           const userGame = user.game;
-          userGame.addPlayer(indexPlayer, ships);
+          userGame.addPlayer(indexPlayer, name, ships);
 
           if (userGame.startGame()) {
             for (let playerData of userGame.getPlayersData()) {
@@ -205,7 +203,7 @@ wsServer.on('connection', function connection(ws, req) {
               if (userWs) userWs.send(JSON.stringify(answer));
             }
 
-            answer = await getAnswerTurn(userGame.getNextPlayer());
+            answer = getAnswerTurn(userGame.getPlayerIndex());
             sendDataToAllUsersInGame(user, answer);
           }
           break;

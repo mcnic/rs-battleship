@@ -1,19 +1,19 @@
 // only func using getStore() or setStore()
 import BattleshipGame from 'ws_server/battleshipGame';
 import { getStore, setStore } from './memoryStore';
-import { TStoreUsers, TRoom, TWinner } from 'ws_server/types';
+import { TStoreUsers, TRoom, TWinners } from 'ws_server/types';
 import { TUser } from 'ws_server/types';
 
 export type TStore = {
   users: TStoreUsers;
   rooms: TRoom[];
-  winners: TWinner[];
+  winners: TWinners;
 };
 
 export const clearDB: TStore = {
   users: {},
   rooms: [],
-  winners: [],
+  winners: {},
 };
 
 export const getUserByName = async (name: string): Promise<TUser | null> => {
@@ -68,7 +68,7 @@ export const updateUserConnectinId = async (
   if (user) {
     user.connectionId = connectinId;
     store.users = { ...store.users, [name]: user };
-    console.log('users', store.users);
+    // console.log('users', store.users);
 
     await setStore(store, clearDB);
   }
@@ -81,7 +81,7 @@ export const updateUserGame = async (name: string, game: BattleshipGame) => {
   if (user) {
     user.game = game;
     store.users = { ...store.users, [name]: user };
-    console.log('users', store.users);
+    // console.log('users', store.users);
 
     await setStore(store, clearDB);
   }
@@ -120,8 +120,16 @@ export const setRooms = async (rooms: TRoom[]) => {
   await setStore(store, clearDB);
 };
 
-export const getWinners = async (): Promise<TWinner[]> => {
+export const getWinners = async (): Promise<TWinners> => {
   const store = (await getStore(clearDB)) as TStore;
 
   return store.winners;
+};
+
+export const addWinner = async (name: string) => {
+  const store = (await getStore(clearDB)) as TStore;
+
+  store.winners[name] = (store.winners[name] ?? 0) + 1;
+
+  await setStore(store, clearDB);
 };
