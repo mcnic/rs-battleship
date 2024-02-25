@@ -202,8 +202,8 @@ class BattleshipGame {
     };
   }
 
-  getShootResult(playerId: number, { x, y }: TShootData): TRandomAttack {
-    const playerData = this.getOppositePlayersData(); //this.getPlayerDataByIndexPlayerOrError(playerId);
+  getShootResult({ x, y }: TShootData): TRandomAttack {
+    const playerData = this.getOppositePlayersData();
 
     const status: TShotStatus = this.getShipStatusByCoords(playerData, x, y);
 
@@ -218,18 +218,16 @@ class BattleshipGame {
       status,
     };
 
-    this.checkIsGameOver(playerId);
+    this.checkIsGameOver();
 
     return res;
   }
 
-  checkIsGameOver(playerId: number) {
-    const playerData = this.getPlayerDataByIndexPlayerOrError(playerId);
-
-    const { dots } = playerData;
-
-    const aliveDots = [...dots].map((dot) => dot.includes(1));
-    if (!aliveDots.includes(true)) this.status = 'win';
+  checkIsGameOver() {
+    this.playersData.forEach((playerData) => {
+      const aliveDots = [...playerData.dots].map((dot) => dot.includes(1));
+      if (!aliveDots.includes(true)) this.status = 'win';
+    });
   }
 
   isGameFinished() {

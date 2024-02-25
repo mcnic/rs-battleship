@@ -84,7 +84,7 @@ const doAttack = async (
     return;
   }
 
-  const attackData = game.getShootResult(playerId, shootData);
+  const attackData = game.getShootResult(shootData);
 
   answer = getAnswerAttack(attackData);
   sendDataToAllUsersInGame(user, answer);
@@ -94,11 +94,13 @@ const doAttack = async (
   answer = getAnswerTurn(game.getCurrentPlayerIndex());
   sendDataToAllUsersInGame(user, answer);
 
+  game.checkIsGameOver();
+
   if (game.isGameFinished()) {
-    answer = getAnswerFinishGame(game.getOppositePlayerIndex());
+    answer = getAnswerFinishGame(game.getCurrentPlayerIndex());
     sendDataToAllUsersInGame(user, answer);
 
-    addWinner(game.getOppositePlayersData()?.name ?? 'noname');
+    addWinner(game.getCurrentPlayersData().name);
 
     answer = getAnsweUpdateWinners(await getWinners());
     sendDataToAllUsersInGame(user, answer);

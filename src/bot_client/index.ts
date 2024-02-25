@@ -1,11 +1,6 @@
 import WebSocket from 'ws';
-import {
-  TAllBotQuery,
-  TBotQueries,
-  getBotAnser,
-  getBotShips,
-  wait,
-} from './botHelper';
+import { getBotAnser, getBotShips, wait } from './botHelper';
+import { TAllBotQuery, TBotQueries } from './TBotQueries';
 import { BOT_DATA } from './const';
 
 const sendAsJson = (socket: WebSocket, data: any) => {
@@ -38,7 +33,6 @@ const battleshipBot = async () => {
   socket.addEventListener('message', (event) => {
     try {
       console.log('\n=== bot: Message from server ', event.data);
-      // sendAsJson(socket, event.data);
 
       const parsedQuery: TAllBotQuery = JSON.parse(event.data.toString());
       const type: TBotQueries = parsedQuery.type;
@@ -68,13 +62,6 @@ const battleshipBot = async () => {
         case 'start_game':
           currentPlayerIndex = parsedData.currentPlayerIndex;
           console.log('currentPlayerIndex', currentPlayerIndex);
-
-          // resp = getBotAnser('add_ships', {
-          //   gameId,
-          //   ships,
-          //   indexPlayer,
-          // });
-          // sendAsJson(socket, resp);
           break;
 
         case 'turn':
@@ -86,6 +73,10 @@ const battleshipBot = async () => {
           });
           sendAsJson(socket, resp);
           break;
+
+        case 'update_winners':
+          resp = getBotAnser('create_room', '');
+          sendAsJson(socket, resp);
 
         default:
           break;
