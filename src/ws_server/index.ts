@@ -47,16 +47,18 @@ const sendDataToAllClients = (data: Object) => {
   wsServer.clients.forEach((client) => client.send(stringData));
 };
 
-const sendDataToAllUsersInGame = (user: TUser, answer: TAllQuery) => {
+const sendDataToAllUsersInGame = async (user: TUser, answer: TAllQuery) => {
   if (user && user.game) {
-    user.game.getPlayersData().forEach(async ({ indexPlayer }) => {
+    const playersData = user.game.getAllPlayersData();
+    for (let key in playersData) {
+      const { indexPlayer } = playersData[key]!;
       const userToSend = await getUserByIndex(indexPlayer);
       if (userToSend) {
         const userWs = connections[userToSend.connectionId];
         console.log('responce to', userToSend.index, ':', answer);
         if (userWs) userWs.send(JSON.stringify(answer));
       }
-    });
+    }
   }
 };
 
@@ -68,8 +70,13 @@ const doAttack = async (
 ) => {
   let answer: TAllQuery;
 
-  if (playerId === game.getCurrentPlayer())
-    throw new Error('wrong player for attack');
+  if (playerId !== game.getCurrentPlayerIndex()) {
+    console.log(
+      `*** wrong player for attack: ${playerId} '${typeof playerId}' instead ${game.getCurrentPlayerIndex()}`,
+    );
+
+    return;
+  }
 
   if (game.isGameFinished()) {
     answer = getAnsweUpdateWinners(await getWinners());
@@ -84,14 +91,14 @@ const doAttack = async (
 
   if (attackData.status === 'miss') game.changePlayer();
 
-  answer = getAnswerTurn(game.getPlayerIndex());
+  answer = getAnswerTurn(game.getCurrentPlayerIndex());
   sendDataToAllUsersInGame(user, answer);
 
   if (game.isGameFinished()) {
-    answer = getAnswerFinishGame(game.getAnotherPlayersIndex());
+    answer = getAnswerFinishGame(game.getOppositePlayerIndex());
     sendDataToAllUsersInGame(user, answer);
 
-    addWinner(game.getAnotherCurrentPlayersData()?.name ?? 'noname');
+    addWinner(game.getOppositePlayersData()?.name ?? 'noname');
 
     answer = getAnsweUpdateWinners(await getWinners());
     sendDataToAllUsersInGame(user, answer);
@@ -111,15 +118,15 @@ wsServer.on('connection', function connection(ws, req) {
   ws.on('error', console.error);
 
   ws.on('message', async (data) => {
-    const parsedData: TAllQuery = JSON.parse(data.toString());
-    const type = parsedData.type;
-    const name = (await getUserNameByConnectionId(connectionId)) ?? '';
-    let user = await getUserByName(name ?? '');
-    let answer: TAllQuery;
-
-    console.log('\nrequest:', parsedData);
-
     try {
+      const parsedData: TAllQuery = JSON.parse(data.toString());
+      const type = parsedData.type;
+      const name = (await getUserNameByConnectionId(connectionId)) ?? '';
+      let user = await getUserByName(name ?? '');
+      let answer: TAllQuery;
+
+      console.log('\nrequest:', parsedData);
+
       switch (type) {
         case 'reg':
           answer = await loginOrCreate(parsedData, connectionId);
@@ -154,11 +161,10 @@ wsServer.on('connection', function connection(ws, req) {
           sendDataToAllClients(answer);
 
           const room = await getRoomByIndex(indexRoom);
-          console.log('room', room);
 
-          if (room === undefined) throw new Error('wronngroom');
+          if (room === undefined) throw new Error('wrong room');
           if (room.roomUsers.length !== 2)
-            throw new Error('wronng players number');
+            throw new Error('wrong players number');
 
           const battleGame = new BattleshipGame(gameIdNum++);
           room.roomUsers.forEach((user) =>
@@ -190,7 +196,9 @@ wsServer.on('connection', function connection(ws, req) {
           userGame.addPlayer(indexPlayer, name, ships);
 
           if (userGame.startGame()) {
-            for (let playerData of userGame.getPlayersData()) {
+            const playersData = userGame.getAllPlayersData();
+            for (let key in playersData) {
+              const playerData = playersData[key]!;
               answer = getAnswerStartGame(
                 playerData.indexPlayer,
                 playerData.ships,
@@ -200,10 +208,11 @@ wsServer.on('connection', function connection(ws, req) {
               if (!user) throw new Error('wrong_user');
 
               const userWs = connections[user.connectionId];
+              console.log('responce to', playerData.indexPlayer, ':', answer);
               if (userWs) userWs.send(JSON.stringify(answer));
             }
 
-            answer = getAnswerTurn(userGame.getPlayerIndex());
+            answer = getAnswerTurn(userGame.getCurrentPlayerIndex());
             sendDataToAllUsersInGame(user, answer);
           }
           break;

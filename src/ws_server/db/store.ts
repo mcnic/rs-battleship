@@ -16,6 +16,12 @@ export const clearDB: TStore = {
   winners: {},
 };
 
+export const getAllUsers = async (): Promise<TStoreUsers> => {
+  const store = (await getStore(clearDB)) as TStore;
+
+  return store.users;
+};
+
 export const getUserByName = async (name: string): Promise<TUser | null> => {
   const store = (await getStore(clearDB)) as TStore;
 

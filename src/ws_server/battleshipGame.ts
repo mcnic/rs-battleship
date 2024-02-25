@@ -21,19 +21,15 @@ export type TPlayerData = {
   dots: number[][];
 };
 
-export type TPlayesrData = { [key: number]: TPlayerData };
-
 class BattleshipGame {
   status: 'wait' | 'run' | 'win' = 'wait';
   gameId: number;
   playersData: TPlayerData[] = [];
   /**  0 or 1 = index in playersData */
-  currentPlayer: number;
+  _currentPlayer: number;
 
   constructor(gameId: number) {
     this.gameId = gameId;
-
-    this.currentPlayer = Math.random() < 0.5 ? 0 : 1;
   }
 
   getDotsFromShips(ships: TShipData[]): number[][] {
@@ -117,36 +113,43 @@ class BattleshipGame {
     });
   }
 
+  getCurrentPlayerIndex(): number {
+    return this.getCurrentPlayersData()?.indexPlayer!;
+  }
+
+  getOppositePlayerIndex(): number {
+    return this.getCurrentPlayersData()?.indexPlayer!;
+  }
+
+  getPlayerDataByIndexPlayerOrError(indexPlayer: number): TPlayerData {
+    const playerData = this.playersData.find(
+      (el) => el.indexPlayer === indexPlayer,
+    );
+
+    if (!playerData)
+      throw new Error(`wrong player data for index ${indexPlayer}`);
+
+    return playerData;
+  }
+
   getGameId() {
     return this.gameId;
   }
 
-  getCurrentPlayer() {
-    return this.currentPlayer;
-  }
-
-  getPlayersData() {
+  getAllPlayersData() {
     return this.playersData;
   }
 
-  getCurrentPlayersData(): TPlayerData | undefined {
-    return this.playersData[this.currentPlayer];
+  getCurrentPlayersData(): TPlayerData {
+    return this.playersData[this._currentPlayer]!;
   }
 
-  getAnotherCurrentPlayersData(): TPlayerData | undefined {
-    return this.playersData[this.currentPlayer ? 0 : 1];
-  }
-
-  getPlayerIndex(): number {
-    return this.playersData[this.currentPlayer]!.indexPlayer!;
+  getOppositePlayersData(): TPlayerData {
+    return this.playersData[this._currentPlayer ? 0 : 1]!;
   }
 
   changePlayer() {
-    this.currentPlayer = this.currentPlayer ? 0 : 1;
-  }
-
-  getAnotherPlayersIndex(): number {
-    return this.currentPlayer ? 0 : 1;
+    this._currentPlayer = this._currentPlayer ? 0 : 1;
   }
 
   getStatus() {
@@ -156,6 +159,9 @@ class BattleshipGame {
   startGame() {
     if (this.playersData.length === 2) {
       this.status = 'run';
+
+      this._currentPlayer = Math.random() < 0.5 ? 0 : 1;
+
       return true;
     }
 
@@ -174,7 +180,7 @@ class BattleshipGame {
   }
 
   getRandomShootData(playerId: number): TShootData {
-    const { dots } = this.playersData[playerId]!;
+    const { dots } = this.getPlayerDataByIndexPlayerOrError(playerId);
     let x = 0,
       y = 0,
       dot = 0;
@@ -197,13 +203,9 @@ class BattleshipGame {
   }
 
   getShootResult(playerId: number, { x, y }: TShootData): TRandomAttack {
-    const { indexPlayer } = this.playersData[playerId]!;
+    const playerData = this.getOppositePlayersData(); //this.getPlayerDataByIndexPlayerOrError(playerId);
 
-    const status: TShotStatus = this.getShipStatusByCoords(
-      this.playersData[playerId]!,
-      x,
-      y,
-    );
+    const status: TShotStatus = this.getShipStatusByCoords(playerData, x, y);
 
     // console.log(`shoot to player '${playerId}': (${x}, ${y})`);
     // this.printPrettyDots(dots);
@@ -212,7 +214,7 @@ class BattleshipGame {
     const res: TRandomAttack = {
       x,
       y,
-      currentPlayer: indexPlayer ? 0 : 1,
+      currentPlayer: this.getCurrentPlayerIndex(),
       status,
     };
 
@@ -222,7 +224,9 @@ class BattleshipGame {
   }
 
   checkIsGameOver(playerId: number) {
-    const { dots } = this.playersData[playerId]!;
+    const playerData = this.getPlayerDataByIndexPlayerOrError(playerId);
+
+    const { dots } = playerData;
 
     const aliveDots = [...dots].map((dot) => dot.includes(1));
     if (!aliveDots.includes(true)) this.status = 'win';
