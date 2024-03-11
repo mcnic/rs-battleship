@@ -48,10 +48,7 @@ export type TRoom = {
   roomUsers: TRoomUser[];
 };
 
-export type TWinner = {
-  name: string;
-  wins: number;
-};
+export type TWinners = { [key: string]: number };
 
 export type TShipData = {
   position: { x: number; y: number };
@@ -73,7 +70,14 @@ export type TUser = {
   game?: BattleshipGame;
 };
 
-export type TAttackResp = {
+export type TAttackReq = {
+  gameId: number;
+  x: number;
+  y: number;
+  indexPlayer: number;
+};
+
+export type TRamdomAttackReq = {
   gameId: number;
   indexPlayer: number;
 };
@@ -83,4 +87,9 @@ export type TRandomAttack = {
   y: number;
   currentPlayer: number;
   status: TShotStatus;
+};
+
+export type TShootData = {
+  x: number;
+  y: number;
 };

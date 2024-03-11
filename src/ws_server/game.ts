@@ -1,8 +1,12 @@
-import { TAllQuery, TAttackResp, TRandomAttack } from './types';
+import {
+  TAllQuery,
+  TAttackReq,
+  TRamdomAttackReq,
+  TRandomAttack,
+  TWinners,
+} from './types';
 
-export const getAnswerTurn = async (
-  currentPlayer: number,
-): Promise<TAllQuery> => {
+export const getAnswerTurn = (currentPlayer: number): TAllQuery => {
   const resp: TAllQuery = {
     type: 'turn',
     id: 0,
@@ -12,8 +16,13 @@ export const getAnswerTurn = async (
   return resp;
 };
 
-export const parseRandomAtack = (data: TAllQuery): TAttackResp => {
-  const realData: TAttackResp = JSON.parse(data.data) as TAttackResp;
+export const parseAtack = (data: TAllQuery): TAttackReq => {
+  const realData: TAttackReq = JSON.parse(data.data);
+  return realData;
+};
+
+export const parseRandomAtack = (data: TAllQuery): TRamdomAttackReq => {
+  const realData: TRamdomAttackReq = JSON.parse(data.data);
   return realData;
 };
 
@@ -34,6 +43,35 @@ export const getAnswerAttack = ({
 
   const resp: TAllQuery = {
     type: 'attack',
+    id: 0,
+    data: JSON.stringify(gameData),
+  };
+
+  return resp;
+};
+
+export const getAnswerFinishGame = (winPlayer: number): TAllQuery => {
+  const gameData = {
+    winPlayer,
+  };
+
+  const resp: TAllQuery = {
+    type: 'finish',
+    id: 0,
+    data: JSON.stringify(gameData),
+  };
+
+  return resp;
+};
+
+export const getAnsweUpdateWinners = (winners: TWinners): TAllQuery => {
+  const gameData = Object.keys(winners).map((name) => ({
+    name,
+    wins: winners[name],
+  }));
+
+  const resp: TAllQuery = {
+    type: 'update_winners',
     id: 0,
     data: JSON.stringify(gameData),
   };
